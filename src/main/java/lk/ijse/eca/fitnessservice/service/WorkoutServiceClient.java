@@ -2,7 +2,7 @@ package lk.ijse.eca.fitnessservice.service;
 
 import lk.ijse.eca.fitnessservice.dto.ApiResponse;
 import lk.ijse.eca.fitnessservice.dto.MemberWorkoutResponseDTO;
-import lombok.RequiredArgsConstructor;
+import lk.ijse.eca.fitnessservice.exception.ResourceNotFoundException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -32,6 +32,6 @@ public class WorkoutServiceClient {
             return response.getData().getContent();
         }
         
-        throw new RuntimeException("Failed to fetch workouts for member ID: " + memberId);
+        throw new ResourceNotFoundException("Failed to fetch workouts for member ID: " + memberId);
     }
 }

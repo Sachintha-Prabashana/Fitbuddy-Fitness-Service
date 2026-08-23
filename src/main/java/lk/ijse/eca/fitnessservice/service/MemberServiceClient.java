@@ -2,7 +2,7 @@ package lk.ijse.eca.fitnessservice.service;
 
 import lk.ijse.eca.fitnessservice.dto.ApiResponse;
 import lk.ijse.eca.fitnessservice.dto.FullProfileResponseDTO;
-import lombok.RequiredArgsConstructor;
+import lk.ijse.eca.fitnessservice.exception.ResourceNotFoundException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -30,6 +30,6 @@ public class MemberServiceClient {
             return response.getData().getContent();
         }
         
-        throw new RuntimeException("Failed to fetch member profile for ID: " + userId);
+        throw new ResourceNotFoundException("Failed to fetch member profile for ID: " + userId);
     }
 }

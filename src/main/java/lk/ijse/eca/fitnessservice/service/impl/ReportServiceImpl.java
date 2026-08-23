@@ -80,10 +80,10 @@ public class ReportServiceImpl implements ReportService {
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             } else {
-                throw new RuntimeException("Could not read the file!");
+                throw new ResourceNotFoundException("Report PDF file not found or not readable for report ID: " + reportId);
             }
         } catch (java.net.MalformedURLException e) {
-            throw new RuntimeException("Error: " + e.getMessage());
+            throw new ResourceNotFoundException("Error reading PDF file: " + e.getMessage());
         }
     }
 }
