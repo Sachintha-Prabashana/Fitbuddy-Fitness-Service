@@ -20,23 +20,10 @@ import java.util.Optional;
 @Service
 public class PdfGeneratorService {
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    public String generateFitnessReportPdf(FitnessReport report, FullProfileResponseDTO memberProfile, List<MemberWorkoutResponseDTO> workouts) {
-        String fileName = "Fitness_Report_" + memberProfile.getFirstName() + "_" + memberProfile.getLastName() + "_" + LocalDate.now() + ".pdf";
-        String directoryPath = uploadDir + File.separator + "fitness-reports";
-        
-        File directory = new File(directoryPath);
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-        
-        String fullPath = directoryPath + File.separator + fileName;
-
+    public byte[] generateFitnessReportPdfBytes(FitnessReport report, FullProfileResponseDTO memberProfile, List<MemberWorkoutResponseDTO> workouts) {
         Document document = new Document();
-        try {
-            PdfWriter.getInstance(document, new FileOutputStream(fullPath));
+        try (java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+            PdfWriter.getInstance(document, out);
             document.open();
 
             // Title
@@ -107,7 +94,7 @@ public class PdfGeneratorService {
             }
 
             document.close();
-            return fullPath;
+            return out.toByteArray();
 
         } catch (DocumentException | IOException e) {
             throw new RuntimeException("Failed to generate PDF report", e);

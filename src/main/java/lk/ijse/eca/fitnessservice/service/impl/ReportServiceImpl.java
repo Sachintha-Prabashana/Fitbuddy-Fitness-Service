@@ -6,6 +6,7 @@ import lk.ijse.eca.fitnessservice.entity.FitnessReport;
 import lk.ijse.eca.fitnessservice.exception.ResourceNotFoundException;
 import lk.ijse.eca.fitnessservice.repository.FitnessReportRepository;
 import lk.ijse.eca.fitnessservice.service.MemberServiceClient;
+import lk.ijse.eca.fitnessservice.service.FileStorageService;
 import lk.ijse.eca.fitnessservice.service.PdfGeneratorService;
 import lk.ijse.eca.fitnessservice.service.ReportService;
 import lk.ijse.eca.fitnessservice.service.WorkoutServiceClient;
@@ -24,6 +25,7 @@ public class ReportServiceImpl implements ReportService {
     private final WorkoutServiceClient workoutServiceClient;
     private final PdfGeneratorService pdfGeneratorService;
     private final FitnessReportRepository fitnessReportRepository;
+    private final FileStorageService fileStorageService;
 
     public FitnessReport generateFitnessReport(Long memberId) {
         // 1. Fetch member details
@@ -60,10 +62,18 @@ public class ReportServiceImpl implements ReportService {
                 .pdfFilePath("") // Will update after generation
                 .build();
 
-        // 5. Generate PDF
-        String pdfPath = pdfGeneratorService.generateFitnessReportPdf(report, memberProfile, workouts);
+        // 5. Generate PDF in-memory
+        byte[] pdfBytes = pdfGeneratorService.generateFitnessReportPdfBytes(report, memberProfile, workouts);
         
-        // 6. Save and return
+        // Sanitize the member name for a clean, URL-safe GCS object filename
+        String sanitizedName = (memberProfile.getFirstName() + "_" + memberProfile.getLastName())
+                .replaceAll("[^a-zA-Z0-9-_]", "_");
+        String fileName = "fitness-report/Fitness_Report_" + sanitizedName + "_" + LocalDate.now() + ".pdf";
+
+        // 6. Store File
+        String pdfPath = fileStorageService.storeFile(fileName, new java.io.ByteArrayInputStream(pdfBytes), "application/pdf");
+        
+        // 7. Save and return
         report.setPdfFilePath(pdfPath);
         return fitnessReportRepository.save(report);
     }
@@ -73,17 +83,6 @@ public class ReportServiceImpl implements ReportService {
         FitnessReport report = fitnessReportRepository.findById(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fitness report not found with id: " + reportId));
         
-        try {
-            java.nio.file.Path file = java.nio.file.Paths.get(report.getPdfFilePath());
-            Resource resource = new org.springframework.core.io.UrlResource(file.toUri());
-
-            if (resource.exists() || resource.isReadable()) {
-                return resource;
-            } else {
-                throw new ResourceNotFoundException("Report PDF file not found or not readable for report ID: " + reportId);
-            }
-        } catch (java.net.MalformedURLException e) {
-            throw new ResourceNotFoundException("Error reading PDF file: " + e.getMessage());
-        }
+        return fileStorageService.getFileAsResource(report.getPdfFilePath());
     }
 }
